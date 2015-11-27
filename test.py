@@ -1,6 +1,4 @@
 __author__ = 'multiangle'
-import tornado
-
 import tornado.web
 import tornado.ioloop
 import tornado.options
@@ -30,9 +28,10 @@ class AuthHandler(tornado.web.RequestHandler):
         print(data)
         self.finish()
     def post(self):
-        data=self.get()
-        print(data)
-
+        data={}
+        print('hehe')
+        print(self.request.body)
+        # print(data)
 
 if __name__=='__main__':
     tornado.options.parse_command_line()

@@ -11,7 +11,7 @@ define('port',default=80,help='run on the given port',type=int)
 class Application(tornado.web.Application):
     def __init__(self):
         handlers=[
-            (r'',AuthHandler)
+            (r'/',AuthHandler)
         ]
         settings=dict(
             debug=True
@@ -27,6 +27,12 @@ class AuthHandler(tornado.web.RequestHandler):
             echostr=self.get_argument('echostr')
         )
         self.write(data['echostr'])
+        print(data)
+        self.finish()
+    def post(self):
+        data=self.get()
+        print(data)
+
 
 if __name__=='__main__':
     tornado.options.parse_command_line()

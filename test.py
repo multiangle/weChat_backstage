@@ -1,13 +1,23 @@
 __author__ = 'multiangle'
+
+# import from tornado
 import tornado.web
 import tornado.ioloop
 import tornado.options
-import time
+from tornado.options import define,options
 
+# import from external libraries
+import time
+import json
+import urllib.request as request
+import requests
 from xml.etree.ElementTree import  Element,SubElement,Comment,tostring
 import xml.etree.ElementTree as etree
 
-from tornado.options import define,options
+# import from this folder
+from config import appid,appsecret
+
+
 define('port',default=80,help='run on the given port',type=int)
 
 class Application(tornado.web.Application):
@@ -40,13 +50,9 @@ class AuthHandler(tornado.web.RequestHandler):
         print(xml_data)
         xml_data=etree.fromstring(xml_data)
         dict_data=xml2dict(xml_data)
-        # ret_data={}
-        # ret_data['ToUserName']=dict_data['FromUserName']
-        # ret_data['FromUserName']=dict_data['ToUserNamee']
-        # ret_data['CreateTime']=str(int(time.time()))
-        # ret_data['MsgType']='text'
-        # ret_data['Content']='hehehe'
-        TEXT_MSG = u"""
+
+        if dict_data['MsgType']=='text':
+            TEXT_MSG = u"""
 <xml>
 <ToUserName><![CDATA[{to_user_name}]]></ToUserName>
 <FromUserName><![CDATA[{from_user_name}]]></FromUserName>
@@ -55,14 +61,33 @@ class AuthHandler(tornado.web.RequestHandler):
 <Content><![CDATA[{content}]]></Content>
 </xml>
 """
-        output=TEXT_MSG.format(to_user_name=dict_data['FromUserName'],
+            output=TEXT_MSG.format(to_user_name=dict_data['FromUserName'],
+                                from_user_name=dict_data['ToUserName'],
+                                create_time=str(int(time.time())),
+                                content='凑撒比'
+                                )
+            # output=bytes(output,encoding='utf-8')
+            self.write(output)
+            self.finish()
+        if dict_data['MsgType']=='event':
+            TEXT_MSG = u"""
+<xml>
+<ToUserName><![CDATA[{to_user_name}]]></ToUserName>
+<FromUserName><![CDATA[{from_user_name}]]></FromUserName>
+<CreateTime>{create_time}</CreateTime>
+<MsgType><![CDATA[text]]></MsgType>
+<Content><![CDATA[{content}]]></Content>
+</xml>
+"""
+            output=TEXT_MSG.format(to_user_name=dict_data['FromUserName'],
                                from_user_name=dict_data['ToUserName'],
                                create_time=str(int(time.time())),
                                content='凑撒比'
-                               )
-        # output=bytes(output,encoding='utf-8')
-        self.write(output)
-        self.finish()
+            )
+            # output=bytes(output,encoding='utf-8')
+            self.write(output)
+            self.finish()
+
 
 def xml2dict(xml_data):
     dict_data={}
@@ -74,7 +99,25 @@ def xml2dict(xml_data):
             dict_data[xml_data[i].tag]=xml_data[i].text
     return dict_data
 
+def create_menu():
+    access_token_url='https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appid}&secret={appsecret}'.format(appid=appid,appsecret=appsecret)
+    page=requests.get(access_token_url).content
+    page=str(page,encoding='utf-8')
+    page=json.loads(page)
+    access_token=page['access_token']
+
+    print(access_token)
+    custom_menu=open('custom_menu','r')
+    custom_menu=json.loads(custom_menu.read())
+    create_menu_url='https://api.weixin.qq.com/cgi-bin/menu/create?access_token=%s'%(access_token)
+    req=requests.post(create_menu_url,json=custom_menu)
+    print(req.content)
+
+
+
+
 if __name__=='__main__':
-    tornado.options.parse_command_line()
-    Application().listen(options.port)
-    tornado.ioloop.IOLoop.instance().start()
+    # tornado.options.parse_command_line()
+    # Application().listen(options.port)
+    # tornado.ioloop.IOLoop.instance().start()
+    create_menu()
